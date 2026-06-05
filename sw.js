@@ -1,5 +1,5 @@
 // Service worker minimale — cache offline dell'app
-const CACHE = 'fabrizio-rpg-v1';
+const CACHE = 'fabrizio-rpg-v2';
 const ASSETS = [
   'index.html',
   'manifest.json',
