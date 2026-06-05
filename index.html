@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Fabrizio RPG">
 <meta name="theme-color" content="#0a0f1e">
 <link rel="apple-touch-icon" href="icon.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#0a0f1e;--card:#111827;--card2:#151e2e;--brd:#1e2d3d;--txt:#e2e8f0;--muted:#64748b;--ok:#34d399;--fail:#ef4444;--boss:#fbbf24;--std:#60a5fa;--sec:#a78bfa;--dis:#f87171}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -104,6 +105,12 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
 .toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-8px);background:var(--ok);color:#000;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .pg-lbl{padding:14px 16px 0;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px}
+.email-inp{width:100%;padding:12px 14px;border-radius:12px;background:var(--card2);border:1px solid var(--brd);color:var(--txt);font-size:14px;margin-bottom:8px;outline:none;-webkit-appearance:none}
+.email-inp:focus{border-color:var(--ok)}
+.auth-card{background:var(--card2);border:1px solid var(--brd);border-radius:14px;padding:16px;margin-bottom:12px}
+.auth-email{font-size:13px;color:var(--ok);font-weight:600;margin-bottom:12px}
+.sync-status{font-size:10px;color:var(--muted);text-align:center;margin:6px 0 4px}
+.sync-sep{margin:20px 0 8px;border-top:1px solid var(--brd);padding-top:14px}
 </style>
 </head>
 <body>
@@ -189,15 +196,38 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
 
 <!-- PAGE: SYNC -->
 <div class="page" id="p-sync">
-  <div class="pg-lbl">Sync Obsidian</div>
+  <div class="pg-lbl">Sync Cloud</div>
   <div class="sync-wrap">
-    <p class="sync-p">Importa il tracker dal vault Obsidian, oppure esporta il markdown aggiornato da incollare nel .md.</p>
-    <button class="sync-btn" onclick="exportMd()">📤 Scarica .md aggiornato</button>
-    <button class="sync-btn" onclick="copyMd()">📋 Copia markdown negli appunti</button>
-    <div class="sync-lbl">Incolla il .md qui per importare</div>
-    <textarea class="md-ta" id="mdArea" placeholder="Incolla il contenuto del tracker Obsidian..."></textarea>
-    <button class="sync-btn" style="margin-top:8px;border-color:var(--ok)" onclick="importMd()">✅ Importa dati dal markdown</button>
-    <button class="sync-btn" style="margin-top:4px;border-color:var(--fail)" onclick="resetData()">🗑️ Reset dati mese</button>
+
+    <!-- LOGIN -->
+    <div id="auth-login">
+      <p class="sync-p">Accedi con la tua email per sincronizzare i dati tra Mac e iPhone in tempo reale.</p>
+      <input type="email" id="emailIn" class="email-inp" placeholder="fabrizioruggeri.business@gmail.com">
+      <button class="sync-btn" onclick="sendMagicLink()" style="border-color:var(--ok)">✉️ Invia link magico</button>
+      <p id="auth-msg" class="sync-p" style="margin-top:8px;min-height:18px"></p>
+    </div>
+
+    <!-- LOGGED IN -->
+    <div id="auth-user" style="display:none">
+      <div class="auth-card">
+        <div class="auth-email" id="auth-email-lbl"></div>
+        <button class="sync-btn" onclick="syncNow()" style="border-color:var(--ok)">☁️ Sincronizza ora</button>
+        <div class="sync-status" id="sync-status"></div>
+        <button class="sync-btn" onclick="logout()" style="border-color:var(--fail)">🚪 Logout</button>
+      </div>
+    </div>
+
+    <!-- OBSIDIAN (secondario) -->
+    <div class="sync-sep">
+      <div class="sync-lbl" style="margin:0 0 8px">Sync Obsidian (manuale)</div>
+      <button class="sync-btn" onclick="exportMd()">📤 Scarica .md aggiornato</button>
+      <button class="sync-btn" onclick="copyMd()">📋 Copia markdown negli appunti</button>
+      <div class="sync-lbl">Incolla il .md qui per importare</div>
+      <textarea class="md-ta" id="mdArea" placeholder="Incolla il contenuto del tracker Obsidian..."></textarea>
+      <button class="sync-btn" style="margin-top:8px;border-color:var(--ok)" onclick="importMd()">✅ Importa dati dal markdown</button>
+      <button class="sync-btn" style="margin-top:4px;border-color:var(--fail)" onclick="resetData()">🗑️ Reset dati mese</button>
+    </div>
+
   </div>
 </div>
 
@@ -687,6 +717,7 @@ function toggleHabit(d,id){
   else               delete S.days[k][id];
   save();
   renderAll();
+  scheduleSyncUp();
 }
 
 function renderStats() {
@@ -918,6 +949,112 @@ function resetData(){
 }
 
 // ─────────────────────────────────────────────
+// SUPABASE CLOUD SYNC
+// ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://gnrrcbhmimwwytndpxtm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7ZrPs4Ak_HNCsU2FfBMgWQ_biy0wGEt';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let sbUser = null;
+let syncTimer = null;
+
+function updateAuthUI() {
+  const loginEl = document.getElementById('auth-login');
+  const userEl  = document.getElementById('auth-user');
+  const lbl     = document.getElementById('auth-email-lbl');
+  if (sbUser) {
+    loginEl.style.display = 'none';
+    userEl.style.display  = 'block';
+    lbl.textContent = '✅ ' + sbUser.email;
+  } else {
+    loginEl.style.display = 'block';
+    userEl.style.display  = 'none';
+  }
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('emailIn').value.trim();
+  if (!email) { toast('⚠️ Inserisci email'); return; }
+  const msg = document.getElementById('auth-msg');
+  msg.style.color = 'var(--muted)';
+  msg.textContent = 'Invio in corso…';
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: location.href }
+  });
+  if (error) {
+    msg.style.color = 'var(--fail)';
+    msg.textContent = '❌ ' + error.message;
+  } else {
+    msg.style.color = 'var(--ok)';
+    msg.textContent = '✉️ Link inviato! Controlla l\'email.';
+  }
+}
+
+async function syncDown() {
+  if (!sbUser) return;
+  const { data, error } = await sb
+    .from('habit_days')
+    .select('day, data')
+    .like('day', YM + '%');
+  if (error) { toast('❌ Sync: ' + error.message); return; }
+  let changed = false;
+  for (const row of (data || [])) {
+    S.days[row.day] = { ...(S.days[row.day] || {}), ...row.data };
+    changed = true;
+  }
+  if (changed) { save(); renderAll(); }
+  setSyncStatus('⬇ ' + new Date().toLocaleTimeString('it-IT'));
+}
+
+async function syncUp() {
+  if (!sbUser) return;
+  const rows = Object.entries(S.days)
+    .filter(([k]) => k.startsWith(YM))
+    .map(([k, data]) => ({ user_id: sbUser.id, day: k, data }));
+  if (!rows.length) return;
+  const { error } = await sb.from('habit_days').upsert(rows, { onConflict: 'user_id,day' });
+  if (!error) setSyncStatus('⬆ ' + new Date().toLocaleTimeString('it-IT'));
+}
+
+async function syncNow() {
+  if (!sbUser) { toast('⚠️ Accedi prima'); return; }
+  toast('☁️ Sincronizzazione…');
+  await syncDown();
+  await syncUp();
+  toast('✅ Sync completato');
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  sbUser = null;
+  updateAuthUI();
+  toast('👋 Logout effettuato');
+}
+
+function setSyncStatus(msg) {
+  const el = document.getElementById('sync-status');
+  if (el) el.textContent = msg;
+}
+
+function scheduleSyncUp() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncUp, 1500);
+}
+
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  sbUser = session?.user ?? null;
+  updateAuthUI();
+  if (sbUser) syncDown();
+  sb.auth.onAuthStateChange((_e, session) => {
+    sbUser = session?.user ?? null;
+    updateAuthUI();
+    if (sbUser) syncDown();
+  });
+}
+
+// ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
 initState();
@@ -939,6 +1076,7 @@ curDay=(_today.getFullYear()===2026&&_today.getMonth()===5)
 })();
 
 renderAll();
+initAuth();
 
 // Service worker (per installazione PWA — funziona solo se servito via http/https)
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
