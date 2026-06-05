@@ -201,9 +201,11 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
 
     <!-- LOGIN -->
     <div id="auth-login">
-      <p class="sync-p">Accedi con la tua email per sincronizzare i dati tra Mac e iPhone in tempo reale.</p>
+      <p class="sync-p">Accedi per sincronizzare Mac ↔ iPhone.</p>
       <input type="email" id="emailIn" class="email-inp" placeholder="fabrizioruggeri.business@gmail.com">
-      <button class="sync-btn" onclick="sendMagicLink()" style="border-color:var(--ok)">✉️ Invia link magico</button>
+      <input type="password" id="pwdIn" class="email-inp" placeholder="Password (se impostata)">
+      <button class="sync-btn" onclick="loginPwd()" style="border-color:var(--ok)">🔑 Accedi con password</button>
+      <button class="sync-btn" onclick="sendMagicLink()" style="margin-top:4px">✉️ Invia link magico</button>
       <p id="auth-msg" class="sync-p" style="margin-top:8px;min-height:18px"></p>
     </div>
 
@@ -969,6 +971,19 @@ function updateAuthUI() {
   } else {
     loginEl.style.display = 'block';
     userEl.style.display  = 'none';
+  }
+}
+
+async function loginPwd() {
+  const email = document.getElementById('emailIn').value.trim();
+  const pwd   = document.getElementById('pwdIn').value;
+  if (!email || !pwd) { toast('⚠️ Inserisci email e password'); return; }
+  const msg = document.getElementById('auth-msg');
+  msg.style.color = 'var(--muted)'; msg.textContent = 'Accesso in corso…';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) {
+    msg.style.color = 'var(--fail)';
+    msg.textContent = '❌ ' + error.message;
   }
 }
 
