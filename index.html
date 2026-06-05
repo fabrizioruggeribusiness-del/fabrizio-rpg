@@ -122,7 +122,7 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
   <div>
     <div class="lv-badge" id="lvBadge">⏳ DORMIENTE</div>
     <div class="hdr-score" id="hdrScore">0</div>
-    <div class="hdr-sub">/ 630 pt — Giugno 2026</div>
+    <div class="hdr-sub" id="hdrSub">/ 630 pt</div>
   </div>
 </div>
 
@@ -140,7 +140,7 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
   <div class="prog">
     <div class="prog-row"><span>Progresso mensile</span><span id="progPct">0%</span></div>
     <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
-    <div class="prog-marks"><span>0</span><span>🥉280</span><span>🥈420</span><span>🥇540</span><span>👑610</span><span>630</span></div>
+    <div class="prog-marks"><span>0</span><span>🥉280</span><span>🥈420</span><span>🥇540</span><span>👑610</span><span id="maxPtsMark">630</span></div>
   </div>
   <div class="projection" id="projection">
     <span class="proj-ico" id="projIco">📈</span>
@@ -150,7 +150,7 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
     <button class="darrow" id="prevBtn" onclick="changeDay(-1)">‹</button>
     <div class="dcenter">
       <div class="dday" id="dayNum">5</div>
-      <div class="dmonth">GIUGNO 2026</div>
+      <div class="dmonth" id="dMonth">GIUGNO 2026</div>
       <button id="todayBtn" onclick="goToday()" style="display:none;font-size:10px;margin-top:3px;padding:2px 8px;border-radius:10px;background:#fbbf2420;border:1px solid #fbbf24;color:#fbbf24;cursor:pointer">↩ Oggi</button>
     </div>
     <div class="dpts"><span id="dPts">0</span><span>/21</span></div>
@@ -184,7 +184,7 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
     <div class="stat-card"><div class="stat-val" id="s-days">0</div><div class="stat-lbl">📅 Giorni registrati</div></div>
   </div>
   <div class="sect">
-    <div class="sect-hd"><span>📅 Calendario Giugno</span></div>
+    <div class="sect-hd"><span id="calTitle">📅 Calendario</span></div>
     <div class="cal-wrap" id="cal-hds"></div>
     <div class="cal-wrap" style="padding-top:0" id="cal-grid"></div>
   </div>
@@ -244,8 +244,16 @@ textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid 
 // ─────────────────────────────────────────────
 // DATI
 // ─────────────────────────────────────────────
-const YM = '2026-06';
-const SK  = 'fab_rpg_jun26';
+const _d    = new Date();
+const YEAR  = _d.getFullYear();
+const MON   = _d.getMonth();
+const DAYS  = new Date(YEAR, MON+1, 0).getDate();
+const YM    = `${YEAR}-${String(MON+1).padStart(2,'0')}`;
+const SK    = `fab_rpg_${YM}`;
+const MAX_PTS = DAYS * 21;
+const _mIt  = _d.toLocaleString('it-IT',{month:'long'});
+const MONTH_UPPER = _mIt.toUpperCase()+' '+YEAR;
+const MONTH_LABEL = _mIt.charAt(0).toUpperCase()+_mIt.slice(1)+' '+YEAR;
 
 const HABITS = [
   {id:'sveglia',        lbl:'Sveglia 7:00',          icon:'⏰', pts:3, cat:'boss'},
@@ -288,7 +296,7 @@ const ACHIEVEMENTS = [
   {id:'macro',   badge:'🥗', name:'Macchina Precisa',   cond:'Macros rispettati ≥25 giorni',         chk: d=>cnt(d,'macros')>=25},
   {id:'10k',     badge:'🚶', name:'10K Club',           cond:'Passi ≥10.000 per 10 giorni',          chk: d=>cnt(d,'passi')>=10},
   {id:'fort',    badge:'🛡️', name:'Fortezza',          cond:'Zero dispersioni 14 gg consecutivi',   chk: d=>noDisConsec(d,14)},
-  {id:'reader',  badge:'📖', name:'Lettore Costante',   cond:'Lettura tutti i 30 giorni',            chk: d=>cnt(d,'lettura')>=30},
+  {id:'reader',  badge:'📖', name:'Lettore Costante',   cond:`Lettura tutti i ${DAYS} giorni`,       chk: d=>cnt(d,'lettura')>=DAYS},
   {id:'dom',     badge:'👑', name:'Giugno Dominato',    cond:'≥610 punti totali',                    chk: d=>totalPts(d)>=610},
 ];
 
@@ -333,28 +341,28 @@ function cnt(days,id)    { return Object.values(days||S.days).filter(d=>d[id]===
 
 function consec(days,id,n) {
   let best=0,cur=0;
-  for(let d=1;d<=30;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&dd[id])cur++;else cur=0; best=Math.max(best,cur); }
+  for(let d=1;d<=DAYS;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&dd[id])cur++;else cur=0; best=Math.max(best,cur); }
   return best>=n;
 }
 
 function bossConsec(days,n) {
   const boss=HABITS.filter(h=>h.cat==='boss').map(h=>h.id);
   let best=0,cur=0;
-  for(let d=1;d<=30;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&boss.every(id=>dd[id]))cur++;else cur=0; best=Math.max(best,cur); }
+  for(let d=1;d<=DAYS;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&boss.every(id=>dd[id]))cur++;else cur=0; best=Math.max(best,cur); }
   return best>=n;
 }
 
 function noDisConsec(days,n) {
   const dis=HABITS.filter(h=>h.cat==='dis').map(h=>h.id);
   let best=0,cur=0;
-  for(let d=1;d<=30;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&dis.every(id=>dd[id]))cur++;else cur=0; best=Math.max(best,cur); }
+  for(let d=1;d<=DAYS;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&dis.every(id=>dd[id]))cur++;else cur=0; best=Math.max(best,cur); }
   return best>=n;
 }
 
 function bossStreakCurrent() {
   const boss=HABITS.filter(h=>h.cat==='boss').map(h=>h.id);
   let cur=0;
-  for(let d=30;d>=1;d--){ const dd=S.days[dKey(d)]; if(dd&&boss.every(id=>dd[id]))cur++;else break; }
+  for(let d=DAYS;d>=1;d--){ const dd=S.days[dKey(d)]; if(dd&&boss.every(id=>dd[id]))cur++;else break; }
   return cur;
 }
 
@@ -616,6 +624,10 @@ function renderAll() {
   document.getElementById('lvBadge').style.cssText=`background:${lv.col}30;color:${lv.col}`;
   document.getElementById('hdrScore').textContent=tot;
   document.getElementById('hdrScore').style.color=lv.col;
+  document.getElementById('hdrSub').textContent=`/ ${MAX_PTS} pt — ${MONTH_LABEL}`;
+  document.getElementById('dMonth').textContent=MONTH_UPPER;
+  document.getElementById('maxPtsMark').textContent=MAX_PTS;
+  document.getElementById('calTitle').textContent=`📅 Calendario ${_mIt.charAt(0).toUpperCase()+_mIt.slice(1)}`;
 
   // Avatar (5 stadi, indipendenti dai 6 livelli)
   drawAvatar(avatarStage(tot));
@@ -629,7 +641,7 @@ function renderAll() {
   lastLvlIdx = lv.idx;
 
   // Progress bar
-  const pct=Math.min(100,(tot/630)*100);
+  const pct=Math.min(100,(tot/MAX_PTS)*100);
   document.getElementById('progFill').style.width=pct+'%';
   document.getElementById('progFill').style.background=lv.col;
   document.getElementById('progPct').textContent=Math.round(pct)+'%';
@@ -655,9 +667,9 @@ function renderProjection(tot){
   const recorded=Object.keys(S.days).filter(k=>k.startsWith(YM)).length;
   if(recorded===0){ ico.textContent='📈'; txt.textContent='Inizia a segnare per vedere la proiezione.'; return; }
   const avg=tot/recorded;
-  const proj=Math.round(avg*30);
+  const proj=Math.round(avg*DAYS);
   const pl=getLvl(proj);
-  const realDay=(()=>{ const t=new Date(); return (t.getFullYear()===2026&&t.getMonth()===5)?t.getDate():recorded; })();
+  const realDay=(()=>{ const t=new Date(); return (t.getFullYear()===YEAR&&t.getMonth()===MON)?t.getDate():recorded; })();
   // prossima soglia
   const next=LEVELS.find(l=>l.min>tot);
   let extra='';
@@ -674,7 +686,7 @@ function renderProjection(tot){
 function renderDay(d) {
   document.getElementById('dayNum').textContent=d;
   document.getElementById('prevBtn').disabled=d<=1;
-  document.getElementById('nextBtn').disabled=d>=30;
+  document.getElementById('nextBtn').disabled=d>=DAYS;
   document.getElementById('dPts').textContent=dPts(d);
 
   const data=dData(d);
@@ -725,7 +737,7 @@ function toggleHabit(d,id){
 function renderStats() {
   const rec=Object.keys(S.days).length;
   let best=0;
-  for(let d=1;d<=30;d++) best=Math.max(best,dPts(d));
+  for(let d=1;d<=DAYS;d++) best=Math.max(best,dPts(d));
   const avg=rec>0?Math.round(totalPts()/rec):0;
 
   document.getElementById('s-streak').textContent=bossStreakCurrent();
@@ -743,15 +755,15 @@ function renderCalendar(){
   hEl.innerHTML=['L','M','M','G','V','S','D'].map(d=>`<div class="cal-hd">${d}</div>`).join('');
   gEl.innerHTML='';
 
-  const dow=new Date(2026,5,1).getDay(); // 0=Sun
+  const dow=new Date(YEAR,MON,1).getDay(); // 0=Sun
   const offset=dow===0?6:dow-1; // Mon=0
   for(let i=0;i<offset;i++) gEl.appendChild(document.createElement('div'));
 
   const today=new Date();
-  const isJun=(today.getFullYear()===2026&&today.getMonth()===5);
-  const todayD=isJun?today.getDate():-1;
+  const isThisMonth=(today.getFullYear()===YEAR&&today.getMonth()===MON);
+  const todayD=isThisMonth?today.getDate():-1;
 
-  for(let d=1;d<=30;d++){
+  for(let d=1;d<=DAYS;d++){
     const pts=dPts(d);
     const has=!!S.days[dKey(d)];
     const cell=document.createElement('div');
@@ -797,15 +809,15 @@ function nav(page){
 }
 
 function changeDay(delta){
-  curDay=Math.max(1,Math.min(30,curDay+delta));
+  curDay=Math.max(1,Math.min(DAYS,curDay+delta));
   renderDay(curDay);
-  const t=new Date(); const realDay=(t.getFullYear()===2026&&t.getMonth()===5)?t.getDate():5;
+  const t=new Date(); const realDay=(t.getFullYear()===YEAR&&t.getMonth()===MON)?t.getDate():1;
   document.getElementById('todayBtn').style.display = curDay!==realDay ? 'inline-block' : 'none';
 }
 
 function goToday(){
   const t=new Date();
-  curDay=(t.getFullYear()===2026&&t.getMonth()===5)?Math.min(t.getDate(),30):5;
+  curDay=(t.getFullYear()===YEAR&&t.getMonth()===MON)?Math.min(t.getDate(),DAYS):1;
   renderDay(curDay);
   document.getElementById('todayBtn').style.display='none';
 }
@@ -897,7 +909,7 @@ function buildMd(){
       const h=HABITS.find(x=>x.id===id);
       const vals=dayNums.map((_,i)=>val(from+i,id));
       if(hasTot){
-        const tot=Array.from({length:30},(_,i)=>(S.days[dKey(i+1)]||{})[id]===true?1:0).reduce((a,b)=>a+b,0);
+        const tot=Array.from({length:DAYS},(_,i)=>(S.days[dKey(i+1)]||{})[id]===true?1:0).reduce((a,b)=>a+b,0);
         vals.push(tot||'');
       }
       return `| ${h.icon} ${h.lbl} | ${h.pts} | ${vals.join(' | ')} |`;
@@ -905,16 +917,17 @@ function buildMd(){
     return [hdr,sep,...rows].join('\n');
   }
 
+  const mid=Math.ceil(DAYS/2);
   function sect(cat,label){
     const ids=HABITS.filter(h=>h.cat===cat).map(h=>h.id);
-    return `\n### ${label}\n\n${table(ids,1,15)}\n\n${table(ids,16,30)}\n`;
+    return `\n### ${label}\n\n${table(ids,1,mid)}\n\n${table(ids,mid+1,DAYS)}\n`;
   }
 
   const tot=totalPts(), lv=getLvl(tot);
-  let md=`# 🎮 TRACKER ABITUDINI — GIUGNO 2026\n\n`;
-  md+=`**Punteggio: ${tot}/630 pt — Livello: ${lv.icon} ${lv.name}**\n`;
+  let md=`# 🎮 TRACKER ABITUDINI — ${MONTH_UPPER}\n\n`;
+  md+=`**Punteggio: ${tot}/${MAX_PTS} pt — Livello: ${lv.icon} ${lv.name}**\n`;
   md+=`\n## 📅 TRACKER GIORNALIERO\n\n**Legenda:** \`✅\` fatto · \`❌\` saltato\n\n---\n`;
-  md+=sect('boss','⭐ BOSS HABITS — Giugno');
+  md+=sect('boss',`⭐ BOSS HABITS — ${MONTH_LABEL}`);
   md+=`\n---\n`;
   md+=sect('std','SALUTE & CRESCITA — Standard');
   md+=`\n---\n`;
@@ -929,7 +942,7 @@ function exportMd(){
   const blob=new Blob([buildMd()],{type:'text/markdown'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='Tracker Abitudini — Giugno 2026.md';
+  a.download=`Tracker Abitudini — ${MONTH_LABEL}.md`;
   a.click();
   toast('📥 File scaricato');
 }
@@ -1075,8 +1088,8 @@ async function initAuth() {
 // ─────────────────────────────────────────────
 initState();
 const _today=new Date();
-curDay=(_today.getFullYear()===2026&&_today.getMonth()===5)
-  ? Math.min(_today.getDate(),30) : 5;
+curDay=(_today.getFullYear()===YEAR&&_today.getMonth()===MON)
+  ? Math.min(_today.getDate(),DAYS) : 1;
 
 // Swipe sinistra/destra per cambiare giorno (solo nella pagina Oggi)
 (function(){
