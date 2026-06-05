@@ -1011,7 +1011,8 @@ async function syncDown() {
   const { data, error } = await sb
     .from('habit_days')
     .select('day, data')
-    .like('day', YM + '%');
+    .gte('day', YM + '-01')
+    .lte('day', YM + '-30');
   if (error) { toast('❌ Sync: ' + error.message); return; }
   let changed = false;
   for (const row of (data || [])) {
