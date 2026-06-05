@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Fabrizio RPG 🎮</title>
+<!-- PWA / iPhone home screen -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fabrizio RPG">
+<meta name="theme-color" content="#0a0f1e">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+:root{--bg:#0a0f1e;--card:#111827;--card2:#151e2e;--brd:#1e2d3d;--txt:#e2e8f0;--muted:#64748b;--ok:#34d399;--fail:#ef4444;--boss:#fbbf24;--std:#60a5fa;--sec:#a78bfa;--dis:#f87171}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:82px}
+/* HEADER */
+.hdr{padding:10px 16px;background:#0f172a;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.lv-badge{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:2px 8px;border-radius:20px;margin-bottom:2px;display:inline-block}
+.hdr-score{font-size:26px;font-weight:900;line-height:1}
+.hdr-sub{font-size:10px;color:var(--muted)}
+/* AVATAR */
+.av-wrap{padding:14px;display:flex;flex-direction:column;align-items:center;border-bottom:1px solid var(--brd);transition:background .5s;position:relative}
+.av-stage{height:210px;display:flex;align-items:flex-end;justify-content:center}
+#av{image-rendering:pixelated;image-rendering:crisp-edges}
+#avImg{height:210px;width:auto;max-width:200px;object-fit:contain;display:none;border-radius:14px}
+.av-stage.lvlup{animation:lvlpop .8s cubic-bezier(.18,1.4,.4,1)}
+@keyframes lvlpop{0%{transform:scale(1)}30%{transform:scale(1.18) rotate(-2deg)}55%{transform:scale(.95) rotate(1deg)}100%{transform:scale(1)}}
+.lvlup-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.6);background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#000;font-weight:900;font-size:18px;padding:10px 22px;border-radius:30px;letter-spacing:1px;box-shadow:0 8px 30px rgba(251,191,36,.6);opacity:0;pointer-events:none;z-index:50;white-space:nowrap}
+.lvlup-banner.show{animation:bannerIn 1.8s ease forwards}
+@keyframes bannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}15%{opacity:1;transform:translate(-50%,-90%) scale(1.1)}30%{transform:translate(-50%,-90%) scale(1)}80%{opacity:1;transform:translate(-50%,-110%) scale(1)}100%{opacity:0;transform:translate(-50%,-150%) scale(.9)}}
+.av-title{font-size:15px;font-weight:700;margin-top:9px;letter-spacing:.5px}
+.av-sub{font-size:11px;color:var(--muted);margin-top:3px;text-align:center;max-width:260px;line-height:1.5}
+/* PROIEZIONE */
+.projection{margin:0 12px 10px;padding:10px 14px;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--brd);border-radius:12px;display:flex;align-items:center;gap:10px;font-size:12px}
+.proj-ico{font-size:20px}
+.proj-txt b{color:#fbbf24}
+/* MINI STREAK */
+.hab-streak{font-size:10px;font-weight:700;color:#fb923c;margin-right:6px;white-space:nowrap}
+/* PROGRESS */
+.prog{padding:10px 16px 12px;background:var(--card2);border-bottom:1px solid var(--brd)}
+.prog-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.prog-bar{height:6px;background:var(--brd);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.16,1,.3,1)}
+.prog-marks{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);margin-top:4px}
+/* DATE NAV */
+.dnav{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card2);border-bottom:1px solid var(--brd)}
+.darrow{width:38px;height:38px;border-radius:10px;background:var(--brd);border:none;color:var(--txt);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.darrow:disabled{opacity:.25}
+.dcenter{text-align:center;flex:1}
+.dday{font-size:28px;font-weight:900;line-height:1}
+.dmonth{font-size:10px;color:var(--muted);letter-spacing:1px}
+.dpts{font-size:18px;font-weight:700}
+.dpts span{font-size:11px;color:var(--muted)}
+/* SECTIONS */
+.sect{margin:10px 12px;border-radius:14px;overflow:hidden;border:1px solid var(--brd);background:var(--card)}
+.sect-hd{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px}
+/* HABIT ROW */
+.hab{display:flex;align-items:center;padding:13px 14px;border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s;user-select:none;-webkit-user-select:none}
+.hab:last-child{border-bottom:none}
+.hab:active{background:rgba(255,255,255,.04)}
+.hab-ico{font-size:18px;width:26px;text-align:center;flex-shrink:0}
+.hab-lbl{flex:1;font-size:13px;font-weight:500;margin:0 10px;line-height:1.3}
+.hab-pts{font-size:10px;color:var(--muted);margin-right:8px;white-space:nowrap}
+.hab-btn{width:34px;height:34px;border-radius:9px;background:var(--brd);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:all .15s}
+.hab-btn.done{background:var(--ok);border-color:var(--ok)}
+.hab-btn.fail{background:rgba(239,68,68,.15);border-color:var(--fail)}
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--card);border-top:1px solid var(--brd);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom)}
+.bnav-btn{flex:1;padding:8px 4px;background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:color .15s}
+.bnav-btn .bi{font-size:22px}
+.bnav-btn.on{color:#fbbf24}
+/* PAGES */
+.page{display:none}
+.page.on{display:block}
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.stat-card{background:var(--card2);border-radius:12px;padding:14px;border:1px solid var(--brd)}
+.stat-val{font-size:26px;font-weight:900}
+.stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+/* CALENDAR */
+.cal-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:10px 12px 12px}
+.cal-hd{font-size:9px;color:var(--muted);text-align:center;font-weight:700;padding-bottom:3px}
+.cal-day{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;transition:transform .1s;color:var(--muted);background:transparent}
+.cal-day:active{transform:scale(.9)}
+.cal-day.today{box-shadow:0 0 0 2px #fbbf24}
+/* ACHIEVEMENTS */
+.ach{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--brd)}
+.ach:last-child{border-bottom:none}
+.ach-ico{font-size:22px;width:34px;flex-shrink:0}
+.ach-body{flex:1}
+.ach-name{font-size:13px;font-weight:600}
+.ach-cond{font-size:10px;color:var(--muted);margin-top:2px}
+.ach.unlocked{background:rgba(255,215,0,.06)}
+/* SYNC */
+.sync-wrap{padding:12px}
+.sync-p{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px}
+.sync-btn{width:100%;padding:13px;border-radius:12px;background:var(--card2);border:1px solid var(--brd);color:var(--txt);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.sync-btn:active{background:var(--brd)}
+.sync-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px}
+textarea.md-ta{width:100%;height:160px;background:var(--card2);border:1px solid var(--brd);border-radius:12px;color:var(--txt);font-family:monospace;font-size:10px;padding:10px;resize:vertical}
+/* TOAST */
+.toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-8px);background:var(--ok);color:#000;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.pg-lbl{padding:14px 16px 0;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="lv-badge" id="lvBadge">⏳ DORMIENTE</div>
+    <div class="hdr-score" id="hdrScore">0</div>
+    <div class="hdr-sub">/ 630 pt — Giugno 2026</div>
+  </div>
+</div>
+
+<!-- PAGE: OGGI -->
+<div class="page on" id="p-today">
+  <div class="av-wrap" id="avWrap">
+    <div class="lvlup-banner" id="lvlupBanner">⬆ LEVEL UP!</div>
+    <div class="av-stage" id="avStage">
+      <img id="avImg" alt="avatar">
+      <canvas id="av" width="120" height="200"></canvas>
+    </div>
+    <div class="av-title" id="avTitle">Fabrizio</div>
+    <div class="av-sub" id="avSub">Inizia. Il primo passo conta.</div>
+  </div>
+  <div class="prog">
+    <div class="prog-row"><span>Progresso mensile</span><span id="progPct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div class="prog-marks"><span>0</span><span>🥉280</span><span>🥈420</span><span>🥇540</span><span>👑610</span><span>630</span></div>
+  </div>
+  <div class="projection" id="projection">
+    <span class="proj-ico" id="projIco">📈</span>
+    <span class="proj-txt" id="projTxt">Inizia a segnare per vedere la proiezione.</span>
+  </div>
+  <div class="dnav">
+    <button class="darrow" id="prevBtn" onclick="changeDay(-1)">‹</button>
+    <div class="dcenter">
+      <div class="dday" id="dayNum">5</div>
+      <div class="dmonth">GIUGNO 2026</div>
+      <button id="todayBtn" onclick="goToday()" style="display:none;font-size:10px;margin-top:3px;padding:2px 8px;border-radius:10px;background:#fbbf2420;border:1px solid #fbbf24;color:#fbbf24;cursor:pointer">↩ Oggi</button>
+    </div>
+    <div class="dpts"><span id="dPts">0</span><span>/21</span></div>
+    <button class="darrow" id="nextBtn" onclick="changeDay(1)">›</button>
+  </div>
+  <div class="sect">
+    <div class="sect-hd"><span>⭐ Boss Habits</span><span style="color:var(--boss)">3 pt</span></div>
+    <div id="boss-list"></div>
+  </div>
+  <div class="sect">
+    <div class="sect-hd"><span>💪 Salute & Crescita</span><span style="color:var(--std)">1 pt</span></div>
+    <div id="std-list"></div>
+  </div>
+  <div class="sect">
+    <div class="sect-hd"><span>🧠 Secondarie</span><span style="color:var(--sec)">1 pt</span></div>
+    <div id="sec-list"></div>
+  </div>
+  <div class="sect" style="margin-bottom:10px">
+    <div class="sect-hd"><span>🛡️ Dispersioni</span><span style="color:var(--dis)">1 pt se resisti</span></div>
+    <div id="dis-list"></div>
+  </div>
+</div>
+
+<!-- PAGE: STATS -->
+<div class="page" id="p-stats">
+  <div class="pg-lbl">Statistiche</div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-val" id="s-streak">0</div><div class="stat-lbl">🔥 Streak boss</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-best">0</div><div class="stat-lbl">⚡ Miglior giornata</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-avg">0</div><div class="stat-lbl">📊 Media giornaliera</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-days">0</div><div class="stat-lbl">📅 Giorni registrati</div></div>
+  </div>
+  <div class="sect">
+    <div class="sect-hd"><span>📅 Calendario Giugno</span></div>
+    <div class="cal-wrap" id="cal-hds"></div>
+    <div class="cal-wrap" style="padding-top:0" id="cal-grid"></div>
+  </div>
+  <div class="sect" style="margin-bottom:10px">
+    <div class="sect-hd"><span>🏅 Achievement</span></div>
+    <div id="ach-list"></div>
+  </div>
+</div>
+
+<!-- PAGE: SYNC -->
+<div class="page" id="p-sync">
+  <div class="pg-lbl">Sync Obsidian</div>
+  <div class="sync-wrap">
+    <p class="sync-p">Importa il tracker dal vault Obsidian, oppure esporta il markdown aggiornato da incollare nel .md.</p>
+    <button class="sync-btn" onclick="exportMd()">📤 Scarica .md aggiornato</button>
+    <button class="sync-btn" onclick="copyMd()">📋 Copia markdown negli appunti</button>
+    <div class="sync-lbl">Incolla il .md qui per importare</div>
+    <textarea class="md-ta" id="mdArea" placeholder="Incolla il contenuto del tracker Obsidian..."></textarea>
+    <button class="sync-btn" style="margin-top:8px;border-color:var(--ok)" onclick="importMd()">✅ Importa dati dal markdown</button>
+    <button class="sync-btn" style="margin-top:4px;border-color:var(--fail)" onclick="resetData()">🗑️ Reset dati mese</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="bnav-btn on" id="bn-today" onclick="nav('today')"><span class="bi">📋</span><span>Oggi</span></button>
+  <button class="bnav-btn" id="bn-stats" onclick="nav('stats')"><span class="bi">📊</span><span>Stats</span></button>
+  <button class="bnav-btn" id="bn-sync" onclick="nav('sync')"><span class="bi">🔄</span><span>Sync</span></button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATI
+// ─────────────────────────────────────────────
+const YM = '2026-06';
+const SK  = 'fab_rpg_jun26';
+
+const HABITS = [
+  {id:'sveglia',        lbl:'Sveglia 7:00',          icon:'⏰', pts:3, cat:'boss'},
+  {id:'palestra',       lbl:'Palestra',                icon:'🏋️', pts:3, cat:'boss'},
+  {id:'macros',         lbl:'Macros rispettati',       icon:'🥗', pts:3, cat:'boss'},
+  {id:'passi',          lbl:'Passi ≥8.000',             icon:'👟', pts:3, cat:'boss'},
+  {id:'cardio',         lbl:'Cardio',                   icon:'🏃', pts:1, cat:'std'},
+  {id:'lettura',        lbl:'Lettura ≥20 pag',          icon:'📖', pts:1, cat:'std'},
+  {id:'journal',        lbl:'Journal',                  icon:'✍️', pts:1, cat:'std'},
+  {id:'meditazione',    lbl:'Meditazione',              icon:'🧘', pts:1, cat:'sec'},
+  {id:'studio',         lbl:'Studio giornaliero',       icon:'📚', pts:1, cat:'sec'},
+  {id:'no_porno',       lbl:'No porno',                 icon:'🚫', pts:1, cat:'dis'},
+  {id:'no_social',      lbl:'No social passivi',        icon:'🚫', pts:1, cat:'dis'},
+  {id:'no_schermi',     lbl:'No schermi pre-sonno',     icon:'🚫', pts:1, cat:'dis'},
+  {id:'no_videogiochi', lbl:'No videogiochi',           icon:'🚫', pts:1, cat:'dis'},
+];
+
+const LEVELS = [
+  {min:0,   name:'DORMIENTE', icon:'😴', col:'#64748b', bg:'#0f172a'},
+  {min:100, name:'IN MARCIA', icon:'🥾', col:'#b45309', bg:'#1a1005'},
+  {min:280, name:'BRONZO',    icon:'🥉', col:'#cd7f32', bg:'#1c1208'},
+  {min:420, name:'ARGENTO',   icon:'🥈', col:'#9ca3af', bg:'#111827'},
+  {min:540, name:'ORO',       icon:'🥇', col:'#eab308', bg:'#1a1500'},
+  {min:610, name:'CAMPIONE',  icon:'👑', col:'#f97316', bg:'#1a0800'},
+];
+
+const TAGLINES = [
+  'Inizia. Il primo passo conta.',
+  'Stai costruendo la rotta. Vai avanti.',
+  'Il ritmo cresce. Tieni duro.',
+  'Macchina inarrestabile. Continua così.',
+  'Sei una forza della natura. Non fermarti.',
+  'Versione più alta di te. Sempre.',
+];
+
+const ACHIEVEMENTS = [
+  {id:'king_am', badge:'🌅', name:'Re del Mattino',    cond:'Sveglia 7:00 per 14 gg consecutivi',  chk: d=>consec(d,'sveglia',14)},
+  {id:'sacred',  badge:'🔥', name:'Fuoco Sacro',        cond:'Tutti 4 Boss per 7 gg consecutivi',    chk: d=>bossConsec(d,7)},
+  {id:'iron',    badge:'💪', name:'Ferro e Sudore',     cond:'Palestra ≥22 giorni',                  chk: d=>cnt(d,'palestra')>=22},
+  {id:'macro',   badge:'🥗', name:'Macchina Precisa',   cond:'Macros rispettati ≥25 giorni',         chk: d=>cnt(d,'macros')>=25},
+  {id:'10k',     badge:'🚶', name:'10K Club',           cond:'Passi ≥10.000 per 10 giorni',          chk: d=>cnt(d,'passi')>=10},
+  {id:'fort',    badge:'🛡️', name:'Fortezza',          cond:'Zero dispersioni 14 gg consecutivi',   chk: d=>noDisConsec(d,14)},
+  {id:'reader',  badge:'📖', name:'Lettore Costante',   cond:'Lettura tutti i 30 giorni',            chk: d=>cnt(d,'lettura')>=30},
+  {id:'dom',     badge:'👑', name:'Giugno Dominato',    cond:'≥610 punti totali',                    chk: d=>totalPts(d)>=610},
+];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let S, curDay;
+
+function initState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SK)||'null');
+    if (raw && raw.days) { S = raw; return; }
+  } catch {}
+  S = {
+    days: {
+      '2026-06-01':{sveglia:false,palestra:true,macros:true,passi:false,cardio:false,lettura:true,journal:true,meditazione:true,studio:true,no_porno:true,no_social:true,no_schermi:true,no_videogiochi:true},
+      '2026-06-02':{sveglia:false,palestra:true,macros:true,passi:true,cardio:false,lettura:true,journal:true,meditazione:false,studio:true,no_porno:false,no_social:true,no_schermi:true,no_videogiochi:true},
+    }
+  };
+}
+
+function save() { localStorage.setItem(SK, JSON.stringify(S)); }
+
+// ─────────────────────────────────────────────
+// CALCOLI
+// ─────────────────────────────────────────────
+function dKey(d) { return `${YM}-${String(d).padStart(2,'0')}`; }
+function dData(d) { return S.days[dKey(d)] || {}; }
+function dPts(d)  { return HABITS.reduce((s,h)=>s+(dData(d)[h.id]===true?h.pts:0), 0); }
+
+function totalPts(days) {
+  const src = days || S.days;
+  return Object.values(src).reduce((tot,dd)=>tot+HABITS.reduce((s,h)=>s+(dd[h.id]===true?h.pts:0),0), 0);
+}
+
+function getLvl(pts) {
+  for (let i=LEVELS.length-1;i>=0;i--) if(pts>=LEVELS[i].min) return {idx:i,...LEVELS[i]};
+  return {idx:0,...LEVELS[0]};
+}
+
+function cnt(days,id)    { return Object.values(days||S.days).filter(d=>d[id]===true).length; }
+
+function consec(days,id,n) {
+  let best=0,cur=0;
+  for(let d=1;d<=30;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&dd[id])cur++;else cur=0; best=Math.max(best,cur); }
+  return best>=n;
+}
+
+function bossConsec(days,n) {
+  const boss=HABITS.filter(h=>h.cat==='boss').map(h=>h.id);
+  let best=0,cur=0;
+  for(let d=1;d<=30;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&boss.every(id=>dd[id]))cur++;else cur=0; best=Math.max(best,cur); }
+  return best>=n;
+}
+
+function noDisConsec(days,n) {
+  const dis=HABITS.filter(h=>h.cat==='dis').map(h=>h.id);
+  let best=0,cur=0;
+  for(let d=1;d<=30;d++){ const dd=(days||S.days)[dKey(d)]; if(dd&&dis.every(id=>dd[id]))cur++;else cur=0; best=Math.max(best,cur); }
+  return best>=n;
+}
+
+function bossStreakCurrent() {
+  const boss=HABITS.filter(h=>h.cat==='boss').map(h=>h.id);
+  let cur=0;
+  for(let d=30;d>=1;d--){ const dd=S.days[dKey(d)]; if(dd&&boss.every(id=>dd[id]))cur++;else break; }
+  return cur;
+}
+
+// ─────────────────────────────────────────────
+// AVATAR — usa immagini AI (stage0..5.png) se esistono,
+// altrimenti fallback al pixel art disegnato a mano
+// ─────────────────────────────────────────────
+// 5 immagini avatar, disaccoppiate dai 6 livelli/premi.
+// Soglie pensate per dare ricompensa visiva precoce.
+function avatarStage(pts){
+  if(pts < 100) return 0;   // dormiente
+  if(pts < 280) return 1;   // in marcia
+  if(pts < 450) return 2;   // costruzione (cravatta blu)
+  if(pts < 610) return 3;   // forte (cravatta borgogna)
+  return 4;                  // campione (corona)
+}
+
+const avatarImgs = [];
+for(let i=0;i<5;i++){
+  const im = new Image();
+  im.src = `stage${i}.png`;
+  im.onload  = ()=>{ im._ok = true;  if(avatarStage(totalPts())===i) drawAvatar(i); };
+  im.onerror = ()=>{ im._ok = false; };
+  avatarImgs.push(im);
+}
+
+function drawAvatar(li) {
+  const img = avatarImgs[li];
+  const elImg = document.getElementById('avImg');
+  const cv = document.getElementById('av');
+  if(img && img._ok && img.naturalWidth>0){
+    elImg.src = img.src;
+    elImg.style.display = 'block';
+    cv.style.display = 'none';
+    return;
+  }
+  elImg.style.display = 'none';
+  cv.style.display = 'block';
+  drawPixelAvatar(li);
+}
+
+function drawPixelAvatar(li) {
+  const cv  = document.getElementById('av');
+  const ctx = cv.getContext('2d');
+  const U   = 4;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.imageSmoothingEnabled = false;
+
+  function r(x,y,w,h,c){ if(!c||w<=0||h<=0)return; ctx.fillStyle=c; ctx.fillRect(x*U,y*U,w*U,h*U); }
+
+  // Carnagione mediterranea
+  const SKN  = '#F0B87A';
+  const SK2  = '#C98050';
+  const SK3  = '#D0905A'; // ombra cranio rasato
+  const EYE  = '#1A0A00';
+  const BEARD = '#3D1C00';
+
+  // Fisico progredisce con il livello
+  const tWs = [8, 8, 8, 10, 10, 12]; // larghezza torso (pari)
+  const aWs = [3, 3, 3,  4,  4,  5]; // larghezza braccia
+  const tW  = tWs[li];
+  const aW  = aWs[li];
+
+  // Palette: [shirt, shirtShadow, pants, shoes, tieColor]
+  const palette = [
+    ['#C0C0C0','#909090','#555566','#3A2510', null],       // 0: grigio casual
+    ['#F0F0F0','#C8C8C8','#2C3050','#2A1A12', null],       // 1: bianca pulita
+    ['#F5F5F5','#D5D5D5','#2C3050','#2A1A12','#6699CC'],   // 2: bianca + cravatta blu
+    ['#F5F5F5','#D5D5D5','#1a1a2a','#050505','#8B1A1A'],   // 3: bianca + cravatta borgogna
+    ['#1a1a2e','#0d0d1e','#0a0a14','#020208','#FFD700'],   // 4: giacca scura + cravatta oro
+    ['#0a0a14','#05050e','#050510','#010108','#FFD700'],   // 5: abito nero + cravatta oro
+  ];
+  const [shirt, shS, pants, shoes, tieCol] = palette[li];
+
+  const slumped   = li === 0;
+  const champ     = li === 5;
+  const hasJacket = li >= 4;
+  const hasTie    = li >= 2;
+
+  const fY  = champ ? 12 : 8;
+  const tY  = fY + 9 + (slumped ? 1 : 0);
+  const txl = 15 - tW/2;
+
+  // ─── AURA ───
+  if(li >= 4){
+    const ac = li>=5 ? '#FF6B35' : '#FFD700';
+    const g = ctx.createRadialGradient(60,(tY+4)*U,5,60,(tY+4)*U,72);
+    g.addColorStop(0, ac+'28'); g.addColorStop(1, ac+'00');
+    ctx.fillStyle = g; ctx.fillRect(0,0,cv.width,cv.height);
+  }
+
+  // ─── CORONA ───
+  if(champ){
+    r(10,2,10,4,'#FFD700');
+    r(11,0,2,2,'#FFD700'); r(14,0,3,3,'#FFD700'); r(17,0,2,2,'#FFD700');
+    r(12,2,2,2,'#FF4444'); r(14,1,2,2,'#4488FF'); r(17,2,2,2,'#44DD44');
+  }
+
+  // ─── TESTA RASATA ───
+  if(champ){
+    r(12, 6, 6, 1, SK3);    // ombra capelli rasati (top stretto)
+    r(11, 7, 8, 5, SKN);    // corpo testa y=7-11
+    r(10, 7, 1, 5, SK2);    // ombra lato sx
+    r(19, 7, 1, 5, SK2);    // ombra lato dx
+  } else {
+    r(12, 4, 6, 1, SK3);    // ombra capelli rasati
+    r(11, 5, 8, 3, SKN);    // corpo testa y=5-7
+    r(10, 5, 1, 3, SK2);    // ombra sx
+    r(19, 5, 1, 3, SK2);    // ombra dx
+  }
+
+  // ─── VISO ───
+  r(11, fY, 8, 7, SKN);
+  r(11, fY, 1, 7, SK2);     // ombra sx viso
+  r(18, fY, 1, 7, SK2);     // ombra dx viso
+
+  // Orecchie (fuori dal rettangolo viso)
+  r(10, fY+1, 1, 2, SKN);
+  r(19, fY+1, 1, 2, SKN);
+  r(10, fY+2, 1, 1, SK2);
+  r(19, fY+2, 1, 1, SK2);
+
+  // ─── OCCHI ───
+  const eY = fY + 2;
+  if(slumped){
+    r(12, eY,   2, 1, SK2);   // palpebre pesanti sx
+    r(16, eY,   2, 1, SK2);   // palpebre pesanti dx
+    r(13, eY+1, 1, 1, EYE);
+    r(17, eY+1, 1, 1, EYE);
+  } else if(champ){
+    r(12, eY, 1, 1, EYE); r(17, eY, 1, 1, EYE);
+    r(13, eY, 1, 1,'#FFF'); r(18, eY, 1, 1,'#FFF');
+    r(12, eY, 1, 1,'#FFD700'); // occhi che brillano
+    r(17, eY, 1, 1,'#FFD700');
+  } else {
+    r(12, eY, 1, 1, EYE); r(17, eY, 1, 1, EYE);
+    r(13, eY, 1, 1,'#FFF'); r(18, eY, 1, 1,'#FFF');
+  }
+
+  // ─── BARBA CURATA ───
+  r(11, fY+3, 2, 4, BEARD);   // basetta sx
+  r(17, fY+3, 2, 4, BEARD);   // basetta dx
+  r(12, fY+4, 2, 1, BEARD);   // baffo sx (gap al centro = naturale)
+  r(16, fY+4, 2, 1, BEARD);   // baffo dx
+  r(11, fY+6, 8, 1, BEARD);   // linea mento
+
+  // ─── BOCCA ───
+  const mY = fY + 5;
+  if(slumped){
+    r(14, mY+1, 2, 1,'#AA5555');
+    r(13, mY,   1, 1,'#AA5555');
+    r(16, mY,   1, 1,'#AA5555');
+  } else if(champ){
+    r(13, mY, 4, 1,'#CC4444'); r(14, mY, 2, 1,'#FF9999');
+  } else {
+    r(13, mY, 3, 1,'#CC5555');
+  }
+
+  // ─── COLLO ───
+  r(14, fY+7, 2, 2, SKN);
+
+  // ─── TORSO + CAMICIA / GIACCA ───
+  if(hasJacket){
+    r(txl, tY, tW, 8, shirt);
+    r(txl, tY, 1, 8, shS);
+    r(txl+tW-1, tY, 1, 8, shS);
+    r(14, tY, 2, 8,'#F0F0F0');       // striscia camicia bianca
+    r(15, tY, 1, 8,'#D8D8D8');       // linea bottoni
+    r(14, tY+5, 2, 1,'#777');        // bottone giacca
+    // Cravatta sopra camicia
+    r(14, tY,   2, 2, tieCol);
+    r(14, tY+2, 2, 5, tieCol);
+    r(13, tY+7, 4, 1, tieCol);       // punta cravatta (più larga)
+  } else {
+    r(txl, tY, tW, 8, shirt);
+    r(txl, tY, 1, 8, shS);
+    r(txl+tW-1, tY, 1, 8, shS);
+    // Colletto V: mostra pelle al centro
+    r(13, tY,   4, 1, SKN);
+    r(14, tY+1, 2, 2, SKN);
+    r(12, tY,   2, 3, shirt);        // aletta colletto sx
+    r(16, tY,   2, 3, shirt);        // aletta colletto dx
+    r(14, tY+3, 1, 4, shS);          // linea bottoni
+    r(15, tY+3, 1, 4, shS);
+    if(hasTie && tieCol){
+      r(14, tY,   2, 2, tieCol);
+      r(14, tY+2, 2, 5, tieCol);
+      r(13, tY+7, 4, 1, tieCol);
+    }
+  }
+
+  // Definizione petto (livelli muscolosi, camicia aderente)
+  if(li >= 3 && !hasJacket){
+    r(13, tY+3, 1, 3, shS);
+    r(16, tY+3, 1, 3, shS);
+  }
+
+  // ─── BRACCIA ───
+  const lAX = txl - aW;
+  const rAX = txl + tW;
+
+  if(champ){
+    r(lAX, tY-5, aW, 7, shirt);
+    r(rAX, tY-5, aW, 7, shirt);
+    r(lAX, tY-8, aW, 3, SKN);        // pugni
+    r(rAX, tY-8, aW, 3, SKN);
+    r(lAX, tY-8, aW, 1,'#FFD700');   // guanti oro
+    r(rAX, tY-8, aW, 1,'#FFD700');
+  } else if(slumped){
+    r(lAX, tY+2, aW, 6, shirt);
+    r(rAX, tY+2, aW, 6, shirt);
+    r(lAX, tY+8, aW, 2, SKN);
+    r(rAX, tY+8, aW, 2, SKN);
+  } else {
+    r(lAX, tY,   aW, 8, shirt);
+    r(rAX, tY,   aW, 8, shirt);
+    r(lAX, tY+8, aW, 2, SKN);
+    r(rAX, tY+8, aW, 2, SKN);
+  }
+
+  // ─── PANTALONI ───
+  const pY = tY + 8;
+  const lW = tW/2 - 1;
+  r(txl,         pY, lW, 9, pants);
+  r(txl+tW/2+1,  pY, lW, 9, pants);
+  r(txl, pY, tW, 1,'#1A0A00');       // cintura
+  r(14,  pY, 2,  1,'#888888');       // fibbia
+
+  // ─── SCARPE ───
+  const sY = pY + 9;
+  r(txl-1,       sY, lW+2, 2, shoes);
+  r(txl+tW/2+1,  sY, lW+2, 2, shoes);
+  if(li >= 2){
+    r(txl,         sY, 1, 1,'#555'); // brillantina scarpe formali
+    r(txl+tW/2+2,  sY, 1, 1,'#555');
+  }
+
+  // ─── OMBRA A TERRA ───
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(60, (sY+2)*U, 22+li*2, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+let lastLvlIdx = null;
+
+function renderAll() {
+  const tot=totalPts();
+  const lv=getLvl(tot);
+
+  // Header
+  document.getElementById('lvBadge').textContent=`${lv.icon} ${lv.name}`;
+  document.getElementById('lvBadge').style.cssText=`background:${lv.col}30;color:${lv.col}`;
+  document.getElementById('hdrScore').textContent=tot;
+  document.getElementById('hdrScore').style.color=lv.col;
+
+  // Avatar (5 stadi, indipendenti dai 6 livelli)
+  drawAvatar(avatarStage(tot));
+  document.getElementById('avWrap').style.background=lv.bg;
+  document.getElementById('avTitle').textContent=`Fabrizio — ${lv.name}`;
+  document.getElementById('avTitle').style.color=lv.col;
+  document.getElementById('avSub').textContent=TAGLINES[lv.idx];
+
+  // Level-up animation (solo se è SALITO, non al primo load)
+  if(lastLvlIdx!==null && lv.idx>lastLvlIdx) triggerLevelUp(lv);
+  lastLvlIdx = lv.idx;
+
+  // Progress bar
+  const pct=Math.min(100,(tot/630)*100);
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progFill').style.background=lv.col;
+  document.getElementById('progPct').textContent=Math.round(pct)+'%';
+
+  renderProjection(tot);
+  renderDay(curDay);
+  renderStats();
+}
+
+function triggerLevelUp(lv){
+  const stage=document.getElementById('avStage');
+  const banner=document.getElementById('lvlupBanner');
+  stage.classList.remove('lvlup'); void stage.offsetWidth; stage.classList.add('lvlup');
+  banner.textContent=`⬆ ${lv.icon} ${lv.name}!`;
+  banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show');
+  if(navigator.vibrate) navigator.vibrate([20,40,60]);
+}
+
+function renderProjection(tot){
+  const ico=document.getElementById('projIco');
+  const txt=document.getElementById('projTxt');
+  // giorni effettivamente trascorsi/registrati nel mese
+  const recorded=Object.keys(S.days).filter(k=>k.startsWith(YM)).length;
+  if(recorded===0){ ico.textContent='📈'; txt.textContent='Inizia a segnare per vedere la proiezione.'; return; }
+  const avg=tot/recorded;
+  const proj=Math.round(avg*30);
+  const pl=getLvl(proj);
+  const realDay=(()=>{ const t=new Date(); return (t.getFullYear()===2026&&t.getMonth()===5)?t.getDate():recorded; })();
+  // prossima soglia
+  const next=LEVELS.find(l=>l.min>tot);
+  let extra='';
+  if(next){
+    const need=next.min-tot;
+    const daysLeft=Math.max(1,30-realDay);
+    const perDay=Math.ceil(need/daysLeft);
+    extra=` · Per ${next.icon} ${next.name}: ${need} pt (${perDay}/gg)`;
+  }
+  ico.textContent=pl.icon;
+  txt.innerHTML=`Al ritmo attuale: <b>${proj} pt → ${pl.name}</b>${extra}`;
+}
+
+function renderDay(d) {
+  document.getElementById('dayNum').textContent=d;
+  document.getElementById('prevBtn').disabled=d<=1;
+  document.getElementById('nextBtn').disabled=d>=30;
+  document.getElementById('dPts').textContent=dPts(d);
+
+  const data=dData(d);
+  const catMap={boss:'boss-list',std:'std-list',sec:'sec-list',dis:'dis-list'};
+
+  for(const [cat,elId] of Object.entries(catMap)){
+    const el=document.getElementById(elId);
+    el.innerHTML='';
+    HABITS.filter(h=>h.cat===cat).forEach(h=>{
+      const v=data[h.id];
+      const done=v===true, fail=v===false;
+      const sk=habitStreak(d,h.id);
+      const row=document.createElement('div');
+      row.className='hab';
+      row.onclick=()=>toggleHabit(d,h.id);
+      row.innerHTML=`<span class="hab-ico">${h.icon}</span>`+
+        `<span class="hab-lbl">${h.lbl}</span>`+
+        (sk>=2?`<span class="hab-streak">🔥${sk}</span>`:'')+
+        `<span class="hab-pts">${h.pts}pt</span>`+
+        `<div class="hab-btn ${done?'done':fail?'fail':''}">${done?'✓':fail?'✕':''}</div>`;
+      el.appendChild(row);
+    });
+  }
+}
+
+// Giorni di fila completati per un'abitudine, contando all'indietro dal giorno d
+function habitStreak(d,id){
+  let cur=0;
+  for(let x=d;x>=1;x--){
+    if((S.days[dKey(x)]||{})[id]===true) cur++;
+    else break;
+  }
+  return cur;
+}
+
+function toggleHabit(d,id){
+  const k=dKey(d);
+  if(!S.days[k]) S.days[k]={};
+  const v=S.days[k][id];
+  if(v===undefined) S.days[k][id]=true;
+  else if(v===true)  S.days[k][id]=false;
+  else               delete S.days[k][id];
+  save();
+  renderAll();
+}
+
+function renderStats() {
+  const rec=Object.keys(S.days).length;
+  let best=0;
+  for(let d=1;d<=30;d++) best=Math.max(best,dPts(d));
+  const avg=rec>0?Math.round(totalPts()/rec):0;
+
+  document.getElementById('s-streak').textContent=bossStreakCurrent();
+  document.getElementById('s-best').textContent=best;
+  document.getElementById('s-avg').textContent=avg;
+  document.getElementById('s-days').textContent=rec;
+
+  renderCalendar();
+  renderAchievements();
+}
+
+function renderCalendar(){
+  const hEl=document.getElementById('cal-hds');
+  const gEl=document.getElementById('cal-grid');
+  hEl.innerHTML=['L','M','M','G','V','S','D'].map(d=>`<div class="cal-hd">${d}</div>`).join('');
+  gEl.innerHTML='';
+
+  const dow=new Date(2026,5,1).getDay(); // 0=Sun
+  const offset=dow===0?6:dow-1; // Mon=0
+  for(let i=0;i<offset;i++) gEl.appendChild(document.createElement('div'));
+
+  const today=new Date();
+  const isJun=(today.getFullYear()===2026&&today.getMonth()===5);
+  const todayD=isJun?today.getDate():-1;
+
+  for(let d=1;d<=30;d++){
+    const pts=dPts(d);
+    const has=!!S.days[dKey(d)];
+    const cell=document.createElement('div');
+    cell.className='cal-day'+(d===todayD?' today':'');
+    cell.textContent=d;
+    cell.onclick=()=>{ curDay=d; nav('today'); };
+    if(has){
+      const p=pts/21;
+      if(p>=.85) cell.style.cssText='background:#15803d;color:#fff';
+      else if(p>=.6) cell.style.cssText='background:#166534;color:#d1fae5';
+      else if(p>=.35) cell.style.cssText='background:#14532d;color:#a7f3d0';
+      else cell.style.cssText='background:#1f2937;color:#9ca3af';
+    }
+    cell.title=has?`${pts}/21 pt`:'';
+    gEl.appendChild(cell);
+  }
+}
+
+function renderAchievements(){
+  const el=document.getElementById('ach-list');
+  el.innerHTML='';
+  ACHIEVEMENTS.forEach(a=>{
+    const ok=a.chk(S.days);
+    const div=document.createElement('div');
+    div.className='ach'+(ok?' unlocked':'');
+    div.innerHTML=`<div class="ach-ico">${a.badge}</div>`+
+      `<div class="ach-body"><div class="ach-name">${a.name}</div><div class="ach-cond">${a.cond}</div></div>`+
+      `<div style="font-size:20px">${ok?'✅':'🔒'}</div>`;
+    el.appendChild(div);
+  });
+}
+
+// ─────────────────────────────────────────────
+// NAVIGAZIONE
+// ─────────────────────────────────────────────
+function nav(page){
+  ['today','stats','sync'].forEach(p=>{
+    document.getElementById(`p-${p}`).classList.toggle('on',p===page);
+    document.getElementById(`bn-${p}`).classList.toggle('on',p===page);
+  });
+  if(page==='today')  renderDay(curDay);
+  if(page==='stats')  renderStats();
+}
+
+function changeDay(delta){
+  curDay=Math.max(1,Math.min(30,curDay+delta));
+  renderDay(curDay);
+  const t=new Date(); const realDay=(t.getFullYear()===2026&&t.getMonth()===5)?t.getDate():5;
+  document.getElementById('todayBtn').style.display = curDay!==realDay ? 'inline-block' : 'none';
+}
+
+function goToday(){
+  const t=new Date();
+  curDay=(t.getFullYear()===2026&&t.getMonth()===5)?Math.min(t.getDate(),30):5;
+  renderDay(curDay);
+  document.getElementById('todayBtn').style.display='none';
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ─────────────────────────────────────────────
+// MARKDOWN IMPORT / EXPORT
+// ─────────────────────────────────────────────
+const MD_MAP=[
+  [/sveglia/i,'sveglia'],[/palestra/i,'palestra'],[/macros/i,'macros'],
+  [/passi/i,'passi'],[/cardio/i,'cardio'],[/lettura/i,'lettura'],
+  [/journal/i,'journal'],[/meditazione/i,'meditazione'],[/studio.*giorn/i,'studio'],
+  [/porno/i,'no_porno'],[/social.*passiv/i,'no_social'],[/schermi/i,'no_schermi'],
+  [/videogiochi/i,'no_videogiochi'],
+];
+
+function matchH(t){ for(const[re,id] of MD_MAP) if(re.test(t)) return id; return null; }
+
+function parseMdText(md){
+  const newDays={};
+  const lines=md.split('\n');
+  let startDay=1;
+
+  for(const line of lines){
+    const tr=line.trim();
+    if(!tr.startsWith('|')) continue;
+    const cells=tr.split('|').map(c=>c.trim()).filter((_,i,a)=>i>0&&i<a.length-1);
+    if(cells.length<3) continue;
+    if(cells[0].includes('---')) continue;
+
+    if(/abitudine/i.test(cells[0])){
+      // Header row: detect start day from first numeric col
+      for(let i=2;i<cells.length;i++){
+        const n=parseInt(cells[i]);
+        if(!isNaN(n)){ startDay=n; break; }
+      }
+      continue;
+    }
+
+    const hid=matchH(cells[0]);
+    if(!hid) continue;
+
+    for(let di=2;di<cells.length;di++){
+      const dn=startDay+(di-2);
+      if(dn>30) break;
+      const c=cells[di];
+      if(/tot/i.test(c)) break;
+      const k=dKey(dn);
+      if(!newDays[k]) newDays[k]={};
+      if(c.includes('✅')) newDays[k][hid]=true;
+      else if(c.includes('❌')) newDays[k][hid]=false;
+    }
+  }
+  return newDays;
+}
+
+function importMd(){
+  const md=document.getElementById('mdArea').value.trim();
+  if(!md){ toast('⚠️ Textarea vuota'); return; }
+  try{
+    const parsed=parseMdText(md);
+    const n=Object.keys(parsed).length;
+    if(!n){ toast('⚠️ Nessun dato trovato'); return; }
+    for(const[k,dd] of Object.entries(parsed)) S.days[k]={...(S.days[k]||{}),...dd};
+    save(); renderAll();
+    toast(`✅ Importati ${n} giorni`);
+  }catch(e){ toast('❌ Errore: '+e.message); }
+}
+
+function buildMd(){
+  const SYM={true:'✅',false:'❌'};
+  const val=(d,id)=>{ const v=(S.days[dKey(d)]||{})[id]; return SYM[v]??'   '; };
+
+  function table(ids,from,to){
+    const dayNums=Array.from({length:to-from+1},(_,i)=>String(from+i));
+    const hasTot=from>1;
+    const colHead=hasTot?[...dayNums,'✅ TOT']:dayNums;
+    const hdr=`| Abitudine | pt | ${colHead.join(' | ')} |`;
+    const sep=`|-----------|:--:|${colHead.map(()=>':--:').join('|')}|`;
+    const rows=ids.map(id=>{
+      const h=HABITS.find(x=>x.id===id);
+      const vals=dayNums.map((_,i)=>val(from+i,id));
+      if(hasTot){
+        const tot=Array.from({length:30},(_,i)=>(S.days[dKey(i+1)]||{})[id]===true?1:0).reduce((a,b)=>a+b,0);
+        vals.push(tot||'');
+      }
+      return `| ${h.icon} ${h.lbl} | ${h.pts} | ${vals.join(' | ')} |`;
+    });
+    return [hdr,sep,...rows].join('\n');
+  }
+
+  function sect(cat,label){
+    const ids=HABITS.filter(h=>h.cat===cat).map(h=>h.id);
+    return `\n### ${label}\n\n${table(ids,1,15)}\n\n${table(ids,16,30)}\n`;
+  }
+
+  const tot=totalPts(), lv=getLvl(tot);
+  let md=`# 🎮 TRACKER ABITUDINI — GIUGNO 2026\n\n`;
+  md+=`**Punteggio: ${tot}/630 pt — Livello: ${lv.icon} ${lv.name}**\n`;
+  md+=`\n## 📅 TRACKER GIORNALIERO\n\n**Legenda:** \`✅\` fatto · \`❌\` saltato\n\n---\n`;
+  md+=sect('boss','⭐ BOSS HABITS — Giugno');
+  md+=`\n---\n`;
+  md+=sect('std','SALUTE & CRESCITA — Standard');
+  md+=`\n---\n`;
+  md+=sect('sec','CRESCITA — Secondarie');
+  md+=`\n---\n`;
+  md+=sect('dis','DISPERSIONI — NO LIST');
+  md+=`\n\n---\n\n*Generato da Habit RPG — ${new Date().toLocaleDateString('it-IT')}*\n`;
+  return md;
+}
+
+function exportMd(){
+  const blob=new Blob([buildMd()],{type:'text/markdown'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Tracker Abitudini — Giugno 2026.md';
+  a.click();
+  toast('📥 File scaricato');
+}
+
+async function copyMd(){
+  try{
+    await navigator.clipboard.writeText(buildMd());
+    toast('📋 Copiato negli appunti!');
+  }catch{
+    document.getElementById('mdArea').value=buildMd();
+    toast('📋 Markdown nella textarea');
+  }
+}
+
+function resetData(){
+  if(!confirm('Reset tutti i dati di giugno?')) return;
+  S={days:{}}; save(); renderAll();
+  toast('🗑️ Dati resettati');
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+initState();
+const _today=new Date();
+curDay=(_today.getFullYear()===2026&&_today.getMonth()===5)
+  ? Math.min(_today.getDate(),30) : 5;
+
+// Swipe sinistra/destra per cambiare giorno (solo nella pagina Oggi)
+(function(){
+  let tx=0;
+  const pg=document.getElementById('p-today');
+  pg.addEventListener('touchstart', e=>{ tx=e.changedTouches[0].clientX; }, {passive:true});
+  pg.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx)<40) return;
+    changeDay(dx<0 ? 1 : -1);
+    if(navigator.vibrate) navigator.vibrate(10);
+  }, {passive:true});
+})();
+
+renderAll();
+
+// Service worker (per installazione PWA — funziona solo se servito via http/https)
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>

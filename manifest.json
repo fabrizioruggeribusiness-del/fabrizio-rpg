@@ -1,0 +1,13 @@
+{
+  "name": "Fabrizio RPG — Tracker Abitudini",
+  "short_name": "Fabrizio RPG",
+  "description": "Tracker abitudini gamificato con avatar che evolve",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f1e",
+  "theme_color": "#0a0f1e",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
