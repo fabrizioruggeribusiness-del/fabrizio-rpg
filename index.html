@@ -369,39 +369,19 @@ function bossStreakCurrent() {
 }
 
 // ─────────────────────────────────────────────
-// AVATAR — usa immagini AI (stage0..5.png) se esistono,
-// altrimenti fallback al pixel art disegnato a mano
+// AVATAR — pixel art dinamico (5 stadi)
 // ─────────────────────────────────────────────
-// 5 immagini avatar, disaccoppiate dai 6 livelli/premi.
-// Soglie pensate per dare ricompensa visiva precoce.
 function avatarStage(pts){
-  if(pts < 100) return 0;   // dormiente
-  if(pts < 280) return 1;   // in marcia
-  if(pts < 450) return 2;   // costruzione (cravatta blu)
-  if(pts < 610) return 3;   // forte (cravatta borgogna)
-  return 4;                  // campione (corona)
-}
-
-const avatarImgs = [];
-for(let i=0;i<5;i++){
-  const im = new Image();
-  im.src = `stage${i}.png`;
-  im.onload  = ()=>{ im._ok = true;  if(avatarStage(totalPts())===i) drawAvatar(i); };
-  im.onerror = ()=>{ im._ok = false; };
-  avatarImgs.push(im);
+  if(pts < 100) return 0;
+  if(pts < 280) return 1;
+  if(pts < 450) return 2;
+  if(pts < 610) return 3;
+  return 4;
 }
 
 function drawAvatar(li) {
-  const img = avatarImgs[li];
-  const elImg = document.getElementById('avImg');
+  document.getElementById('avImg').style.display = 'none';
   const cv = document.getElementById('av');
-  if(img && img._ok && img.naturalWidth>0){
-    elImg.src = img.src;
-    elImg.style.display = 'block';
-    cv.style.display = 'none';
-    return;
-  }
-  elImg.style.display = 'none';
   cv.style.display = 'block';
   drawPixelAvatar(li);
 }
